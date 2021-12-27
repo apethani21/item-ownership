@@ -108,7 +108,7 @@ fn main() {
     let table_cells = durations_as_vec.iter().map(|x| x.iter().map(|y| Cell::from(y)).collect()).collect();
 
     let table = Table::new(
-        Style::Grid,
+        Style::FancyPresto,
         table_cells,
         Some(Headers::from(vec!["Item", "Age"])),
     );
