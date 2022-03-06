@@ -28,11 +28,17 @@ fn get_total_months(date: &NaiveDate) -> i32 {
 fn add_months(date: NaiveDate, num_months: i32) -> NaiveDate {
     let current_total_months = get_total_months(&date);
     let new_total_months = current_total_months + num_months;
-    let (years, months) = (new_total_months / 12, new_total_months % 12);
+    let years = new_total_months / 12;
+    let mut months = new_total_months % 12;
+    let mut day = date.day();
+    if (months == 2) & (day > 28) {
+        months += 1;
+        day -= 28;
+    }
     if months == 0 {
-        NaiveDate::from_ymd(years - 1, 12, date.day())
+        NaiveDate::from_ymd(years - 1, 12, day)
     } else {
-        NaiveDate::from_ymd(years, months as u32, date.day())
+        NaiveDate::from_ymd(years, months as u32, day)
     }
 }
 
@@ -96,7 +102,6 @@ fn main() {
                     purchase_date_str, error
                 );
             });
-
         let (years, months, days) = relativedelta(purchase_date, now);
         durations.insert(item_name.to_string(), format!("{} years, {} months, and {} days", years, months, days));
     }
