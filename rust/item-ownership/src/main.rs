@@ -97,6 +97,12 @@ fn relativedelta(start_date: NaiveDate, end_date: NaiveDate) -> (i32, i32, i32) 
     (years, months, days)
 }
 
+fn parse_date(date: &str) -> NaiveDate {
+    NaiveDate::parse_from_str(date, "%d/%m/%Y").unwrap_or_else(|error| {
+        panic!("Cannot parse {} using format %d-%m-%Y: {:?}", date, error);
+    })
+}
+
 fn main() {
     let mut path = home_dir().unwrap();
     let filename = "items.json";
@@ -107,14 +113,14 @@ fn main() {
     for (item_name, item_dates) in items_info.as_object().unwrap() {
         let now = Utc::now().date().naive_local();
         let purchase_date_str = item_dates.get("bought").unwrap().as_str().unwrap();
-        let purchase_date = NaiveDate::parse_from_str(purchase_date_str, "%d/%m/%Y")
-            .unwrap_or_else(|error| {
-                panic!(
-                    "Cannot parse {} using format %d-%m-%Y: {:?}",
-                    purchase_date_str, error
-                );
-            });
-        let (years, months, days) = relativedelta(purchase_date, now);
+        let purchase_date = parse_date(purchase_date_str);
+        let stopped_date_str = item_dates.get("stopped").unwrap().as_str();
+        let end_date = if let Some(stop_date) = stopped_date_str {
+            parse_date(stop_date)
+        } else {
+            now
+        };
+        let (years, months, days) = relativedelta(purchase_date, end_date);
         durations.insert(
             item_name.to_string(),
             format!("{} years, {} months, and {} days", years, months, days),
