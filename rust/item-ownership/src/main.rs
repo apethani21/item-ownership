@@ -1,9 +1,9 @@
 use chrono::prelude::*;
 use home::home_dir;
 use serde_json;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
-use stybulate::{Table, Style, Cell, Headers};
+use stybulate::{Cell, Headers, Style, Table};
 
 pub fn get_days_from_month(year: i32, month: u32) -> i64 {
     NaiveDate::from_ymd(
@@ -31,10 +31,17 @@ fn add_months(date: NaiveDate, num_months: i32) -> NaiveDate {
     let years = new_total_months / 12;
     let mut months = new_total_months % 12;
     let mut day = date.day();
+    let thirty_day_months: HashSet<i32> = vec![4, 6, 9, 11].into_iter().collect();
     if (months == 2) & (day > 28) {
         months += 1;
         day -= 28;
     }
+
+    if thirty_day_months.contains(&months) && (day == 31) {
+        months += 1;
+        day = 1;
+    }
+
     if months == 0 {
         NaiveDate::from_ymd(years - 1, 12, day)
     } else {
@@ -62,6 +69,11 @@ fn relativedelta(start_date: NaiveDate, end_date: NaiveDate) -> (i32, i32, i32) 
     if updated_start_date > end_date {
         updated_start_date = add_months(updated_start_date, -1);
         months = months - 1;
+    }
+
+    if months == -1 {
+        years -= 1;
+        months = 11;
     }
 
     let delta_year = end_date.year() - updated_start_date.year();
@@ -103,14 +115,20 @@ fn main() {
                 );
             });
         let (years, months, days) = relativedelta(purchase_date, now);
-        durations.insert(item_name.to_string(), format!("{} years, {} months, and {} days", years, months, days));
+        durations.insert(
+            item_name.to_string(),
+            format!("{} years, {} months, and {} days", years, months, days),
+        );
     }
     let mut durations_as_vec = vec![];
     for (key, value) in &durations {
         durations_as_vec.push(vec![key, value])
     }
     durations_as_vec.sort_by(|a, b| b[1].cmp(a[1]));
-    let table_cells = durations_as_vec.iter().map(|x| x.iter().map(|y| Cell::from(y)).collect()).collect();
+    let table_cells = durations_as_vec
+        .iter()
+        .map(|x| x.iter().map(|y| Cell::from(y)).collect())
+        .collect();
 
     let table = Table::new(
         Style::FancyPresto,
