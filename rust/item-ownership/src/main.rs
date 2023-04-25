@@ -111,6 +111,7 @@ fn main() {
     let items_json_str = fs::read_to_string(path).expect("Unable to read file");
     let items_info: serde_json::Value = serde_json::from_str(&items_json_str).expect("Dodgy JSON");
     let mut durations: HashMap<String, String> = HashMap::new();
+    let mut durations_comp: HashMap<String, i32> = HashMap::new();
     for (item_name, item_dates) in items_info.as_object().unwrap() {
         let now = Utc::now().date_naive();
         let purchase_date_str = item_dates.get("bought").unwrap().as_str().unwrap();
@@ -126,12 +127,18 @@ fn main() {
             item_name.to_string(),
             format!("{} years, {} months, and {} days", years, months, days),
         );
+        durations_comp.insert(item_name.to_string(), 365 * years + 31 * months + days);  // rough & ready way to sort by length of ownership
     }
     let mut durations_as_vec = vec![];
     for (key, value) in &durations {
         durations_as_vec.push(vec![key, value])
     }
-    durations_as_vec.sort_by(|a, b| b[1].cmp(a[1]));
+    durations_as_vec.sort_by(|a, b| {
+        durations_comp
+            .get(b[0])
+            .unwrap()
+            .cmp(durations_comp.get(a[0]).unwrap())
+    });
     let table_cells = durations_as_vec
         .iter()
         .map(|x| x.iter().map(|y| Cell::from(y)).collect())
