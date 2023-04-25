@@ -6,7 +6,7 @@ use std::fs;
 use stybulate::{Cell, Headers, Style, Table};
 
 pub fn get_days_from_month(year: i32, month: u32) -> i64 {
-    NaiveDate::from_ymd(
+    NaiveDate::from_ymd_opt(
         match month {
             12 => year + 1,
             _ => year,
@@ -17,7 +17,8 @@ pub fn get_days_from_month(year: i32, month: u32) -> i64 {
         },
         1,
     )
-    .signed_duration_since(NaiveDate::from_ymd(year, month, 1))
+    .unwrap()
+    .signed_duration_since(NaiveDate::from_ymd_opt(year, month, 1).unwrap())
     .num_days()
 }
 
@@ -43,9 +44,9 @@ fn add_months(date: NaiveDate, num_months: i32) -> NaiveDate {
     }
 
     if months == 0 {
-        NaiveDate::from_ymd(years - 1, 12, day)
+        NaiveDate::from_ymd_opt(years - 1, 12, day).unwrap()
     } else {
-        NaiveDate::from_ymd(years, months as u32, day)
+        NaiveDate::from_ymd_opt(years, months as u32, day).unwrap()
     }
 }
 
@@ -111,7 +112,7 @@ fn main() {
     let items_info: serde_json::Value = serde_json::from_str(&items_json_str).expect("Dodgy JSON");
     let mut durations: HashMap<String, String> = HashMap::new();
     for (item_name, item_dates) in items_info.as_object().unwrap() {
-        let now = Utc::now().date().naive_local();
+        let now = Utc::now().date_naive();
         let purchase_date_str = item_dates.get("bought").unwrap().as_str().unwrap();
         let purchase_date = parse_date(purchase_date_str);
         let stopped_date_str = item_dates.get("stopped").unwrap().as_str();
